@@ -181,6 +181,8 @@
             justify-content: center;
             padding: 20px;
             box-sizing: border-box;
+            touch-action: none;
+            overflow: hidden;
         }
 
         .lightbox-overlay.active {
@@ -193,6 +195,27 @@
             object-fit: contain;
             border-radius: 4px;
             cursor: zoom-out;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            transform-origin: center center;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: none;
+            font-size: 22px;
+            line-height: 40px;
+            text-align: center;
+            cursor: pointer;
+            z-index: 10000;
         }
 
         .griglia-filtri {
@@ -353,7 +376,8 @@
 
 <div class="container">
 
-    <div id="lightbox" class="lightbox-overlay" onclick="chiudiLightbox()">
+    <div id="lightbox" class="lightbox-overlay" onclick="gestisciClickOverlay()">
+        <button class="lightbox-close" onclick="event.stopPropagation(); chiudiLightbox();">✕</button>
         <img id="lightbox-img" src="" alt="">
     </div>
 
@@ -488,22 +512,95 @@
         }
     }
 
+    function gestisciClickOverlay() {
+        if (lbMossoAbbastanza) {
+            lbMossoAbbastanza = false;
+            return;
+        }
+        chiudiLightbox();
+    }
+
     function apriLightbox(src) {
         const overlay = document.getElementById('lightbox');
         const img = document.getElementById('lightbox-img');
         img.src = src;
+        lbResetTransform();
         overlay.classList.add('active');
     }
 
     function chiudiLightbox() {
         document.getElementById('lightbox').classList.remove('active');
         document.getElementById('lightbox-img').src = '';
+        lbResetTransform();
     }
 
     document.addEventListener('click', function(e) {
         const target = e.target;
         if (target.tagName === 'IMG' && (target.classList.contains('img-botanica') || target.classList.contains('img-zoomabile'))) {
             apriLightbox(target.src);
+        }
+    });
+
+    // ===== Pinch-to-zoom e pan dentro la lightbox =====
+    let lbScale = 1, lbPanX = 0, lbPanY = 0;
+    let lbStartDist = 0, lbStartScale = 1;
+    let lbStartTouchX = 0, lbStartTouchY = 0;
+    let lbIsPanning = false, lbMossoAbbastanza = false;
+
+    function lbApplyTransform() {
+        document.getElementById('lightbox-img').style.transform =
+            `translate(${lbPanX}px, ${lbPanY}px) scale(${lbScale})`;
+    }
+
+    function lbResetTransform() {
+        lbScale = 1; lbPanX = 0; lbPanY = 0;
+        lbIsPanning = false; lbMossoAbbastanza = false;
+        const img = document.getElementById('lightbox-img');
+        if (img) img.style.transform = '';
+    }
+
+    function lbDistanza(touches) {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    document.getElementById('lightbox-img').addEventListener('touchstart', function(e) {
+        lbMossoAbbastanza = false;
+        if (e.touches.length === 2) {
+            lbStartDist = lbDistanza(e.touches);
+            lbStartScale = lbScale;
+        } else if (e.touches.length === 1 && lbScale > 1) {
+            lbIsPanning = true;
+            lbStartTouchX = e.touches[0].clientX - lbPanX;
+            lbStartTouchY = e.touches[0].clientY - lbPanY;
+        }
+    }, { passive: true });
+
+    document.getElementById('lightbox-img').addEventListener('touchmove', function(e) {
+        if (e.touches.length === 2 && lbStartDist > 0) {
+            e.preventDefault();
+            lbMossoAbbastanza = true;
+            const dist = lbDistanza(e.touches);
+            lbScale = Math.min(Math.max(lbStartScale * (dist / lbStartDist), 1), 4);
+            lbApplyTransform();
+        } else if (e.touches.length === 1 && lbIsPanning) {
+            e.preventDefault();
+            lbMossoAbbastanza = true;
+            lbPanX = e.touches[0].clientX - lbStartTouchX;
+            lbPanY = e.touches[0].clientY - lbStartTouchY;
+            lbApplyTransform();
+        }
+    }, { passive: false });
+
+    document.getElementById('lightbox-img').addEventListener('touchend', function(e) {
+        if (e.touches.length < 2) lbStartDist = 0;
+        if (e.touches.length === 0) {
+            lbIsPanning = false;
+            if (lbScale <= 1) {
+                lbScale = 1; lbPanX = 0; lbPanY = 0;
+                lbApplyTransform();
+            }
         }
     });
     
