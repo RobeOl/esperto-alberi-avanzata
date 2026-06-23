@@ -810,16 +810,66 @@
             if (el) notePerSpecie[id] = el.value;
         });
 
-        const filtroMargine = document.getElementById('filtro-margine').value.toLowerCase().trim();
-        const filtroDisposizione = document.getElementById('filtro-disposizione').value.toLowerCase().trim();
-        const filtroCorteccia = document.getElementById('filtro-corteccia').value.toLowerCase().trim();
-        const filtroFrutto = document.getElementById('filtro-frutto').value.toLowerCase().trim();
         const filtroTesto = (document.getElementById('ricerca-specie')?.value || '').toLowerCase().trim();
         
         const risultatiDiv = document.getElementById('lista-identificati');
         const contatoreDiv = document.getElementById('contatore-risultati');
         
         if(!risultatiDiv || !contatoreDiv) return;
+
+        // Se c'è una ricerca testuale, autocompila i filtri con i valori condivisi
+        if (filtroTesto) {
+            const trovatePerTesto = databaseAlberi.filter(albero => {
+                if (!albero.id) return false;
+                const nc = (albero.nomeComune || '').toLowerCase();
+                const ns = (albero.nomeScientifico || '').toLowerCase();
+                return nc.includes(filtroTesto) || ns.includes(filtroTesto);
+            });
+
+            if (trovatePerTesto.length > 0) {
+                // Per ciascun filtro: se tutti i risultati condividono lo stesso tag → impostalo
+                const campiESelect = [
+                    { tag: 'tagMargine',      selectId: 'filtro-margine' },
+                    { tag: 'tagDisposizione', selectId: 'filtro-disposizione' },
+                    { tag: 'tagCorteccia',    selectId: 'filtro-corteccia' },
+                    { tag: 'tagFrutto',       selectId: 'filtro-frutto' }
+                ];
+                campiESelect.forEach(({ tag, selectId }) => {
+                    const sel = document.getElementById(selectId);
+                    if (!sel) return;
+                    // Raccogli i valori unici (lowercase) tra le specie trovate per testo
+                    const valori = trovatePerTesto.map(a => tendernessTrim(a[tag]));
+                    const unici = [...new Set(valori)];
+                    if (unici.length === 1 && unici[0]) {
+                        // Tutte concordano: cerca l'opzione del select che matcha
+                        let matched = false;
+                        for (const opt of sel.options) {
+                            if (opt.value.toLowerCase().trim() !== 'tutti' &&
+                                unici[0].includes(opt.value.toLowerCase().trim())) {
+                                sel.value = opt.value;
+                                matched = true;
+                                break;
+                            }
+                        }
+                        if (!matched) sel.value = sel.options[0].value; // fallback a "Qualsiasi"
+                    } else {
+                        // Divergono: lascia/reimposta a "Qualsiasi"
+                        sel.value = sel.options[0].value;
+                    }
+                });
+            }
+        } else {
+            // Testo cancellato: reimposta tutti i filtri a "Qualsiasi"
+            ['filtro-margine','filtro-disposizione','filtro-corteccia','filtro-frutto'].forEach(id => {
+                const sel = document.getElementById(id);
+                if (sel) sel.value = sel.options[0].value;
+            });
+        }
+
+        const filtroMargine = document.getElementById('filtro-margine').value.toLowerCase().trim();
+        const filtroDisposizione = document.getElementById('filtro-disposizione').value.toLowerCase().trim();
+        const filtroCorteccia = document.getElementById('filtro-corteccia').value.toLowerCase().trim();
+        const filtroFrutto = document.getElementById('filtro-frutto').value.toLowerCase().trim();
 
         // Filtro dinamico sui dati del CSV
         const specieFiltrateReali = databaseAlberi.filter(albero => {
