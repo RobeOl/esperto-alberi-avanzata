@@ -835,11 +835,20 @@
                 (filtroCorteccia === "tutti" || tC.includes(filtroCorteccia)) &&
                 (filtroFrutto === "tutti" || tF.includes(filtroFrutto));
             if (!passaFiltri) return false;
-            // Filtro testo libero su nome comune e nome scientifico
+            
+            // --- RICERCA TESTUALE POTENZIATA ---
             if (filtroTesto) {
-                const nc = (albero.nomeComune || '').toLowerCase();
-                const ns = (albero.nomeScientifico || '').toLowerCase();
-                if (!nc.includes(filtroTesto) && !ns.includes(filtroTesto)) return false;
+                // Cerca in TUTTE le colonne del record
+                let trovato = false;
+                for (const key in albero) {
+                    // Ignora campi vuoti o non stringhe
+                    if (typeof albero[key] !== 'string') continue;
+                    if (albero[key].toLowerCase().includes(filtroTesto)) {
+                        trovato = true;
+                        break;
+                    }
+                }
+                if (!trovato) return false;
             }
             return true;
         });
@@ -883,18 +892,14 @@
             elencoHtml += "</div>";
             elencoHtml += "<div id='foto-" + idPulito + "' style='display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;'></div>";
 
-            // =========================================================================
-            // QUI VA INSERITA LA PARTE B (LA NUOVA GRIGLIA A 5 COLONNE AUTOMATIZZATA):
+            // Griglia a 5 colonne automatizzata
             elencoHtml += "<div style='display: flex; gap: 8px; margin-top: 10px; overflow-x: auto;'>";
-            
             elencoHtml += `<div style='flex: 1; min-width: 75px; text-align: center;'><span style='font-size: 10px; color: #666; font-weight: bold; display: block; margin-bottom: 2px;'>FOGLIA</span><img src='immagini/foglie/${idPulito}.jpg' class='img-botanica' style='margin:0; width:100%;' onerror='this.parentNode.style.display="none";'></div>`;
             elencoHtml += `<div style='flex: 1; min-width: 75px; text-align: center;'><span style='font-size: 10px; color: #666; font-weight: bold; display: block; margin-bottom: 2px;'>DETT. FOGLIA</span><img src='immagini/foglie_dettaglio/${idPulito}.jpg' class='img-botanica' style='margin:0; width:100%;' onerror='this.parentNode.style.display="none";'></div>`;
             elencoHtml += `<div style='flex: 1; min-width: 75px; text-align: center;'><span style='font-size: 10px; color: #666; font-weight: bold; display: block; margin-bottom: 2px;'>TRONCO</span><img src='immagini/tronchi/${idPulito}.jpg' class='img-botanica' style='margin:0; width:100%;' onerror='this.parentNode.style.display="none";'></div>`;
             elencoHtml += `<div style='flex: 1; min-width: 75px; text-align: center;'><span style='font-size: 10px; color: #666; font-weight: bold; display: block; margin-bottom: 2px;'>FRUTTO</span><img src='immagini/frutti/${idPulito}.jpg' class='img-botanica' style='margin:0; width:100%;' onerror='this.parentNode.style.display="none";'></div>`;
             elencoHtml += `<div style='flex: 1; min-width: 75px; text-align: center;'><span style='font-size: 10px; color: #666; font-weight: bold; display: block; margin-bottom: 2px;'>CHIOMA</span><img src='immagini/chiome/${idPulito}.jpg' class='img-botanica' style='margin:0; width:100%;' onerror='this.parentNode.style.display="none";'></div>`;
-            
             elencoHtml += "</div>";
-            // =========================================================================
 
             elencoHtml += "</div>";
         });
