@@ -457,3 +457,30 @@ git config --global pull.rebase false
 - **Aggiornamenti OTA (Over The Air)**: con Capacitor Live Updates è possibile
   aggiornare la parte web dell'app (HTML/CSS/JS) senza passare per una nuova
   build APK — utile per correzioni rapide senza dover reinstallare.
+
+---
+
+# Allineamento web/Android
+
+`npx cap sync android` è il comando di Capacitor che tiene allineato il progetto Android nativo con la tua web app. Fa in sostanza due cose:
+
+1. **Copia i file web** (`www/index.html`, CSS, JS, immagini, ecc.) dentro il progetto Android nativo (in `android/app/src/main/assets/public/`), sostituendo quelli vecchi con l'ultima versione che hai modificato.
+
+2. **Aggiorna i plugin nativi**: se hai aggiunto o rimosso plugin Capacitor (es. Camera, Filesystem, Share che usi già nel tuo codice) tramite npm, sincronizza le dipendenze native corrispondenti nel progetto Android (build.gradle, ecc.).
+
+In pratica è l'equivalente di:
+```
+npx cap copy android   (solo copia i file web)
++ 
+npx cap update android (solo aggiorna i plugin nativi)
+```
+ma fatti insieme in un colpo solo.
+
+**Quando usarlo:** ogni volta che modifichi `index.html` (come ora, per l'immagine di sfondo) o qualsiasi file dentro `www/`, e vuoi che quelle modifiche si vedano quando apri il progetto in Android Studio o generi l'APK. Senza questo comando, Android Studio continuerebbe a usare la vecchia copia dei file già presente in `android/app/src/main/assets/public/`.
+
+Un flusso tipico dopo aver modificato l'HTML sarebbe:
+```
+npx cap sync android
+npx cap open android    (apre Android Studio per compilare/testare)
+```
+oppure, se vuoi solo testare rapidamente senza aprire Android Studio, `npx cap run android` (se hai un device/emulatore collegato).
