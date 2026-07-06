@@ -756,6 +756,9 @@
 
         // MAPPATURA POTENZIATA: Ora include sia i testi che i tag di identificazione!
         const mappatura = [
+            { etichetta: "Diffusione in Italia", colonna: "Diffusione" },     // <-- NUOVO
+            { etichetta: "Quota / Ambiente", colonna: "Quota" },              // <-- NUOVO
+            { etichetta: "Fogliazione", colonna: "Fogliazione" },             // <-- NUOVO
             { etichetta: "Disposizione Foglie", colonna: "tagDisposizione" }, // <-- NUOVO
             { etichetta: "Margine Fogliare", colonna: "tagMargine" },         // <-- NUOVO
             { etichetta: "Tipo Corteccia", colonna: "tagCorteccia" },         // <-- NUOVO
@@ -769,7 +772,11 @@
             { etichetta: "Portamento / Chioma", colonna: "descrizioneChioma", folder: "chiome" }
         ];
 
-        let tabularHtml = "<h3>Tabella di confronto morfologico:</h3><table><thead><tr><th>Tratto Diagnostico</th><th>" + sp1.nomeComune + "</th><th>" + sp2.nomeComune + "</th></tr></thead><tbody>";
+        let tabularHtml = "<h3>Tabella di confronto morfologico:</h3>";
+        tabularHtml += "<table><thead><tr><th>Tratto Diagnostico</th>";
+        tabularHtml += "<th>" + sp1.nomeComune + "<br><span style='font-weight:normal; font-style:italic; font-size:12px;'>" + (sp1.nomeScientifico || "") + "</span></th>";
+        tabularHtml += "<th>" + sp2.nomeComune + "<br><span style='font-weight:normal; font-style:italic; font-size:12px;'>" + (sp2.nomeScientifico || "") + "</span></th>";
+        tabularHtml += "</tr></thead><tbody>";
 
         mappatura.forEach(item => {
             const val1 = sp1[item.colonna] || "Dato non presente";
@@ -872,6 +879,7 @@
             elencoHtml += "<div class='card-risultato' style='flex-direction: column; gap: 10px;'>";
             elencoHtml += "<div><h4>" + albero.nomeComune + "</h4>";
             elencoHtml += "<p style='font-style: italic; margin: 0 0 10px 0; color: #666;'>" + albero.nomeScientifico + "</p>";
+            elencoHtml += "<p style='font-size: 13px; margin: 4px 0; color:#2e7d32;'><strong>Diffusione:</strong> " + (albero.Diffusione || 'N/D') + " &nbsp;|&nbsp; <strong>Quota:</strong> " + (albero.Quota || 'N/D') + " &nbsp;|&nbsp; <strong>Fogliazione:</strong> " + (albero.Fogliazione || 'N/D') + "</p>";
             elencoHtml += "<p style='font-size: 14px; margin: 4px 0;'><strong>Foglia:</strong> " + (albero.descrizioneFoglia || '') + "</p>";
             elencoHtml += "<p style='font-size: 14px; margin: 4px 0;'><strong>Corteccia:</strong> " + (albero.descrizioneCorteccia || '') + "</p>";
             elencoHtml += "<p style='font-size: 14px; margin: 4px 0;'><strong>Frutto:</strong> " + (albero.descrizioneFrutto || '') + "</p></div>";

@@ -525,6 +525,15 @@
         
         <div class="griglia-filtri" style="margin-top: 0;">
             <div class="select-wrapper">
+                <label for="filtro-tipo">Tipo:</label>
+                <select id="filtro-tipo" onchange="filtraSpecie()">
+                    <option value="TUTTI">-- Qualsiasi --</option>
+                    <option value="conifera">Conifera</option>
+                    <option value="latifoglia">Latifoglia</option>
+                </select>
+            </div>
+
+            <div class="select-wrapper">
                 <label for="filtro-margine">Margine Foglia:</label>
                 <select id="filtro-margine" onchange="filtraSpecie()">
                     <option value="TUTTI">-- Qualsiasi --</option>
@@ -568,9 +577,23 @@
                     <option value="arillo">Arillo / Amenti</option>
                 </select>
             </div>
+
+            <div class="select-wrapper">
+                <label for="filtro-portamento">Portamento:</label>
+                <select id="filtro-portamento" onchange="filtraSpecie()">
+                    <option value="TUTTI">-- Qualsiasi --</option>
+                    <option value="conica_piramidale">Conica/Piramidale</option>
+                    <option value="colonnare_fastigiata">Colonnare/Fastigiata</option>
+                    <option value="globosa_rotonda_ovale">Globosa/Rotonda/Ovale</option>
+                    <option value="ombrello">Ombrello</option>
+                    <option value="pendula_piangente">Pendula/Piangente</option>
+                    <option value="irregolare_arbustiva">Irregolare/Arbustiva</option>
+                </select>
+            </div>
         </div>
 
         <div id="lista-identificati"></div>
+
     </div>
 </div>
 
@@ -708,6 +731,17 @@
     function tendernessTrim(str) {
         return (str || "").toLowerCase().trim();
     }
+
+    // Mappa delle chiavi di Portamento sulle parole chiave da cercare nel testo
+    // libero del campo descrizioneChioma (stesso principio dei tag testuali già in uso).
+    const mappaPortamento = {
+        "conica_piramidale": ["conic", "piramidal"],
+        "colonnare_fastigiata": ["colonnare", "colonnari", "fastigiat"],
+        "globosa_rotonda_ovale": ["globos", "rotond", "tondeggiant", "ovale", "ovali", "emisferic"],
+        "ombrello": ["ombrell"],
+        "pendula_piangente": ["pendul", "piangent"],
+        "irregolare_arbustiva": ["irregolare", "irregolari", "arbustiv", "cespuglios", "disordinat"]
+    };
     
     function inizializzaApplicazione() {
         const select1 = document.getElementById('albero1');
@@ -717,17 +751,42 @@
         
         select1.innerHTML = "";
         select2.innerHTML = "";
-    
+
+        // Raggruppa le specie per genere (fallback: famiglia, poi "Altro")
+        // così le tendine mostrano vicine le specie che si confondono davvero sul campo
+        // (es. tutte le querce insieme, tutti i pini insieme), invece di un unico elenco piatto.
+        const gruppi = {};
         databaseAlberi.forEach(albero => {
-            if(albero.id) {
+            if(!albero.id) return;
+            const chiaveGruppo = (albero.genere || albero.famiglia || "Altro").trim();
+            if(!gruppi[chiaveGruppo]) gruppi[chiaveGruppo] = [];
+            gruppi[chiaveGruppo].push(albero);
+        });
+
+        const generiOrdinati = Object.keys(gruppi).sort((a, b) => a.localeCompare(b, 'it'));
+
+        generiOrdinati.forEach(genere => {
+            const specieDelGruppo = gruppi[genere].slice().sort((a, b) =>
+                a.nomeComune.localeCompare(b.nomeComune, 'it')
+            );
+
+            const optgroup1 = document.createElement('optgroup');
+            const optgroup2 = document.createElement('optgroup');
+            optgroup1.label = optgroup2.label = genere;
+
+            specieDelGruppo.forEach(albero => {
                 let opt1 = document.createElement('option');
                 let opt2 = document.createElement('option');
                 opt1.value = opt2.value = albero.id.trim();
                 opt1.textContent = opt2.textContent = albero.nomeComune + " (" + albero.nomeScientifico + ")";
-                select1.appendChild(opt1);
-                select2.appendChild(opt2);
-            }
+                optgroup1.appendChild(opt1);
+                optgroup2.appendChild(opt2);
+            });
+
+            select1.appendChild(optgroup1);
+            select2.appendChild(optgroup2);
         });
+
         if(select2.options[1]) select2.selectedIndex = 1;
         
         document.getElementById('stato-caricamento').style.color = "#2e7d32";
@@ -824,10 +883,12 @@
             if (el) notePerSpecie[id] = el.value;
         });
 
+        const filtroTipo = document.getElementById('filtro-tipo').value.toLowerCase().trim();
         const filtroMargine = document.getElementById('filtro-margine').value.toLowerCase().trim();
         const filtroDisposizione = document.getElementById('filtro-disposizione').value.toLowerCase().trim();
         const filtroCorteccia = document.getElementById('filtro-corteccia').value.toLowerCase().trim();
         const filtroFrutto = document.getElementById('filtro-frutto').value.toLowerCase().trim();
+        const filtroPortamento = document.getElementById('filtro-portamento').value.toLowerCase().trim();
         const filtroTesto = (document.getElementById('ricerca-specie')?.value || '').toLowerCase().trim();
         
         const risultatiDiv = document.getElementById('lista-identificati');
@@ -838,14 +899,20 @@
         // Filtro dinamico sui dati del CSV
         const specieFiltrateReali = databaseAlberi.filter(albero => {
             if (!albero.id) return false;
+            const tT = tendernessTrim(albero.tipo);
             const tM = tendernessTrim(albero.tagMargine);
             const tD = tendernessTrim(albero.tagDisposizione);
             const tC = tendernessTrim(albero.tagCorteccia);
             const tF = tendernessTrim(albero.tagFrutto);
-            const passaFiltri = (filtroMargine === "tutti" || tM.includes(filtroMargine)) &&
+            const tP = tendernessTrim(albero.descrizioneChioma);
+            const passaPortamento = filtroPortamento === "tutti" ||
+                (mappaPortamento[filtroPortamento] || []).some(parolaChiave => tP.includes(parolaChiave));
+            const passaFiltri = (filtroTipo === "tutti" || tT === filtroTipo) &&
+                (filtroMargine === "tutti" || tM.includes(filtroMargine)) &&
                 (filtroDisposizione === "tutti" || tD.includes(filtroDisposizione)) &&
                 (filtroCorteccia === "tutti" || tC.includes(filtroCorteccia)) &&
-                (filtroFrutto === "tutti" || tF.includes(filtroFrutto));
+                (filtroFrutto === "tutti" || tF.includes(filtroFrutto)) &&
+                passaPortamento;
             if (!passaFiltri) return false;
             
             // --- RICERCA TESTUALE POTENZIATA ---

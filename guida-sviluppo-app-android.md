@@ -460,7 +460,7 @@ git config --global pull.rebase false
 
 ---
 
-# Allineamento web/Android
+# Allineamento web/Android (QUESTO VALE SOLO SE SI COMPILA IN LOCALE CON ANDROID STUDIO!!!!)
 
 `npx cap sync android` è il comando di Capacitor che tiene allineato il progetto Android nativo con la tua web app. Fa in sostanza due cose:
 
